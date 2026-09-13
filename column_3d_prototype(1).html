@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>العمود 3D — مهندس الموقع</title>
+<style>
+:root{--bg:#07111f;--bg2:#0b1728;--panel:#0f1d30;--panel2:#12233a;--line:#223a5c;--ink:#eef6ff;--muted:#9fb2c8;--blue:#3d8bfd;--cyan:#56c4ff;--amber:#f6b64a;--green:#54d3a5;--danger:#ff7d7d;--shadow:0 18px 50px rgba(0,0,0,.34)}
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:radial-gradient(circle at 45% 15%,#12243c 0,#081321 42%,#050b14 100%);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;overflow:hidden}
+button,input{font:inherit}
+.app{height:100vh;height:100dvh;display:grid;grid-template-rows:68px 1fr 82px}
+header{display:flex;align-items:center;gap:18px;padding:0 24px;border-bottom:1px solid rgba(120,165,220,.15);background:rgba(5,13,24,.82);backdrop-filter:blur(14px);z-index:20}
+.brand{display:flex;align-items:center;gap:12px;min-width:235px}.logo{width:42px;height:42px;border:1px solid #2b4c75;border-radius:12px;display:grid;place-items:center;background:#0d1f35;box-shadow:inset 0 0 24px rgba(61,139,253,.12)}.logo svg{width:24px}.brand b{font-size:18px}.brand span{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.search{margin:auto;width:min(470px,42vw);position:relative}.search input{width:100%;border:1px solid #28466b;background:#102139;color:#dcecff;border-radius:16px;padding:12px 44px 12px 16px;outline:none}.search:before{content:'⌕';position:absolute;right:15px;top:7px;font-size:25px;color:#79a7df}.toplinks{display:flex;gap:20px;color:#c5d5e6;font-size:13px}.toplinks span{white-space:nowrap}
+main{min-height:0;display:grid;grid-template-columns:170px minmax(0,1fr) 360px;gap:16px;padding:16px 18px 12px;direction:ltr}
+.sidebar,.details,.stage{direction:rtl;border:1px solid rgba(78,120,170,.22);background:linear-gradient(180deg,rgba(14,28,47,.96),rgba(8,18,31,.96));border-radius:18px;box-shadow:var(--shadow);min-height:0}
+.sidebar{padding:16px 10px}.sidebar h4{margin:0 8px 14px;color:#8ba5c2;font-size:12px}.navitem{width:100%;border:0;background:transparent;color:#d8e5f3;padding:13px 12px;border-radius:11px;text-align:right;margin:4px 0;display:flex;align-items:center;gap:10px;cursor:pointer}.navitem.active{background:linear-gradient(90deg,rgba(61,139,253,.35),rgba(61,139,253,.1));color:white;border-right:3px solid var(--blue)}.navicon{width:25px;text-align:center;color:#8cbcff}
+.stage{position:relative;overflow:hidden}.stage-title{position:absolute;right:22px;top:18px;z-index:6;pointer-events:none}.stage-title small{color:#6f8baa;font-size:11px}.stage-title h1{font-size:25px;margin:6px 0}.stage-title p{margin:0;color:#9bb0c7;font-size:12px}
+#three-wrap{position:absolute;inset:0}
+#three-wrap canvas{display:block}
+#labelLayer{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#leaderSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.leader-line{stroke:rgba(125,196,255,.55);stroke-width:1.2;stroke-dasharray:2 3}
+.canvas-hint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:8;color:#8da5be;font-size:11px;background:rgba(7,17,31,.7);border:1px solid #213956;padding:7px 11px;border-radius:10px;backdrop-filter:blur(7px)}
+.model-controls{position:absolute;bottom:14px;left:15px;display:flex;gap:7px;z-index:8}.ctl{width:36px;height:36px;border:1px solid #284563;background:#0d1c2f;color:white;border-radius:10px;cursor:pointer}.ctl:hover{border-color:#4d91ec;background:#132b47}
+.hotspot{position:absolute;top:0;left:0;will-change:transform;border:1px solid rgba(91,169,255,.7);background:rgba(8,21,37,.92);color:#eaf5ff;border-radius:10px;padding:8px 10px;font-size:11px;min-width:120px;max-width:150px;text-align:right;box-shadow:0 8px 26px rgba(0,0,0,.36);cursor:pointer;transition:border-color .2s,background .2s,opacity .2s;backdrop-filter:blur(10px);pointer-events:auto}.hotspot:hover,.hotspot.active{border-color:#7dccff;background:#102947}.hotspot b{display:block;color:#8fc5ff;font-size:12px;margin-bottom:2px}.hotspot i{font-style:normal;color:#aabbd0;font-size:10px}
+.stage-overlay-left{position:absolute;left:16px;top:18px;z-index:9;display:flex;flex-direction:column;gap:8px}
+.legend{background:rgba(7,17,30,.82);border:1px solid #203b5c;border-radius:12px;padding:9px 11px;font-size:10px;color:#99afc6}.legend span{display:flex;align-items:center;gap:7px;margin:4px 0}.dot{width:8px;height:8px;border-radius:50%}
+.view-toggle{display:flex;gap:6px;background:rgba(7,17,30,.82);border:1px solid #203b5c;border-radius:12px;padding:5px}
+.vtab{border:0;background:transparent;color:#9db4cc;padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer}
+.vtab.active{background:linear-gradient(#4295ff,#2675dc);color:#fff}
+#sectionWrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 30%,#0f2036 0%,#081321 70%)}
+#sectionWrap.hidden,#three-wrap.hidden{display:none!important}
+#sectionSvg{max-width:100%;max-height:100%}
+.dimline{stroke:#7dc4ff;stroke-width:1.3}
+.extline{stroke:#3a5a80;stroke-width:1}
+.dimlabel{fill:#eaf5ff;font-size:11px}
+.dimlabel-bg{fill:#0c1c30;opacity:.86}
+.dimlabel-sub{fill:#8fbde8;font-size:9px}
+.section-note{fill:#9db4cc;font-size:10.5px}
+.details{padding:16px;overflow:auto}.details::-webkit-scrollbar{width:7px}.details::-webkit-scrollbar-thumb{background:#274365;border-radius:8px}.details h2{font-size:19px;margin:1px 0 14px}.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:15px;position:sticky;top:0;background:#0e1c2f;padding:2px 0 9px;z-index:5}.tab{border:1px solid #233d5e;background:#102039;color:#a9bfd6;padding:9px 5px;border-radius:9px;font-size:11px;cursor:pointer}.tab.active{background:linear-gradient(#4295ff,#2675dc);border-color:#5ca7ff;color:#fff;box-shadow:0 5px 18px rgba(61,139,253,.23)}
+.info-card{border:1px solid #203b5c;background:linear-gradient(180deg,#0e2035,#0b192b);border-radius:13px;padding:14px;margin-bottom:10px}.info-card h3{font-size:13px;margin:0 0 10px;color:#e9f3ff}.row{display:flex;justify-content:space-between;gap:16px;padding:7px 0;border-bottom:1px solid rgba(111,153,199,.11);font-size:12px}.row:last-child{border-bottom:0}.label{color:#97aec5}.value{text-align:left;color:#f5f9ff;font-weight:650;direction:ltr}.formula{display:block;color:#7dc4ff;margin-top:3px;font-size:11px;direction:ltr}.note{border:1px solid rgba(61,139,253,.4);background:rgba(35,103,193,.1);color:#a8c9ee;border-radius:12px;padding:12px;font-size:11px;line-height:1.65;margin-top:10px}.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 7px;border-radius:20px;background:#172d48;color:#a5caef;font-size:10px}.tag.general:before{content:'●';color:var(--green)}
+.sheet-handle{display:none}
+.bottom{display:flex;align-items:center;gap:12px;padding:12px 22px;background:#06101d;border-top:1px solid rgba(102,144,190,.14);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;cursor:grab;-webkit-overflow-scrolling:touch}
+.bottom.dragging{cursor:grabbing;scroll-behavior:auto;user-select:none}
+.bottom-title{min-width:150px;color:#89a2bd;font-size:12px}
+.quick{scroll-snap-align:start;flex:0 0 auto;min-width:150px;height:55px;padding:9px 12px;border:1px solid #213c5c;background:#0d1c30;color:#d9e8f7;border-radius:12px;cursor:pointer;text-align:right;transition:.2s}.quick:hover{border-color:#4b91e5;transform:translateY(-2px)}.quick b{display:block;font-size:12px}.quick span{display:block;color:#7f98b2;font-size:10px;margin-top:3px}
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.58);backdrop-filter:blur(8px);z-index:50;display:none;align-items:center;justify-content:center;padding:20px}.modal-back.open{display:flex}.modal{width:min(520px,94vw);border:1px solid #2e5079;background:linear-gradient(180deg,#10243b,#091827);box-shadow:0 30px 100px rgba(0,0,0,.6);border-radius:18px;padding:18px}.modal-head{display:flex;justify-content:space-between;align-items:center}.modal h3{margin:0}.close{border:0;background:#18304c;color:#b9d0e8;width:34px;height:34px;border-radius:9px;cursor:pointer}.modal p{color:#a9bdd2;line-height:1.9;font-size:13px}.modal .mini{background:#091624;border:1px solid #1f3856;border-radius:11px;padding:10px 12px;color:#d9e8f6;font-size:12px}
+@media(max-width:1050px){
+  body{overflow:hidden}
+  .app{height:100dvh;display:flex;flex-direction:column}
+  header{flex:0 0 auto;padding:0 12px}
+  .brand{min-width:auto}.brand span,.toplinks{display:none}.search{width:auto;flex:1}
+  main{flex:1;min-height:0;display:block;padding:8px;position:relative;direction:rtl}
+  .sidebar{display:none}
+  .stage{position:absolute;inset:8px}
+  .details{position:absolute;left:8px;right:8px;bottom:8px;max-height:46%;border-radius:16px 16px 0 0;z-index:25;transition:max-height .25s ease;box-shadow:0 -12px 40px rgba(0,0,0,.4)}
+  .details.collapsed{max-height:118px;overflow:hidden}
+  .sheet-handle{display:block;width:44px;height:5px;border-radius:4px;background:#2c4c72;margin:0 auto 10px;cursor:pointer}
+  .tabs{grid-template-columns:repeat(5,minmax(58px,1fr))}
+  .bottom{flex:0 0 auto}
+  .legend{display:none}
+}
+@media(max-width:600px){.details{padding:11px}.tab{font-size:10px;padding:8px 2px}.stage-title h1{font-size:20px}.stage-title p{display:none}.hotspot{min-width:100px;max-width:128px;padding:6px 8px}.view-toggle{transform:scale(.92);transform-origin:top left}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#78b7ff" stroke-width="1.8"><path d="M4 18h16M7 18V7l5-3 5 3v11M9 9h6M9 12h6M9 15h6"/></svg></div><div><b>مهندس الموقع</b><span>مرجع بصري تفاعلي</span></div></div>
+  <div class="search"><input placeholder="ابحث عن عنصر أو معلومة..." /></div>
+  <div class="toplinks"><span>الرئيسية</span><span>الأقسام</span><span>المفضلة ☆</span></div>
+</header>
+<main>
+  <aside class="sidebar">
+    <h4>العناصر الإنشائية</h4>
+    <button class="navitem active"><span class="navicon">▥</span>العمود</button>
+    <button class="navitem"><span class="navicon">⌂</span>القاعدة</button>
+    <button class="navitem"><span class="navicon">▯</span>الرقبة</button>
+    <button class="navitem"><span class="navicon">═</span>الميدة</button>
+    <button class="navitem"><span class="navicon">▰</span>الجسر</button>
+    <button class="navitem"><span class="navicon">▱</span>البلاطة</button>
+    <button class="navitem"><span class="navicon">▦</span>الجدار</button>
+    <button class="navitem"><span class="navicon">≋</span>الدرج</button>
+  </aside>
+
+  <section class="stage">
+    <div class="stage-title"><small>العناصر الإنشائية / العمود</small><h1>العمود — Column</h1><p>اضغط على أي نقطة لعرض المعلومة المرتبطة بها.</p></div>
+    <div class="stage-overlay-left">
+      <div class="legend"><span><i class="dot" style="background:#d1d7de"></i>الخرسانة</span><span><i class="dot" style="background:#717d8d"></i>التسليح الطولي</span><span><i class="dot" style="background:#4ba6ff"></i>الكانات</span><span><i class="dot" style="background:#f0a541"></i>منطقة الاشتراك</span></div>
+      <div class="view-toggle"><button class="vtab active" id="tab3d">3D View</button><button class="vtab" id="tabSection">Section View</button></div>
+    </div>
+    <div id="three-wrap">
+      <div id="labelLayer"></div>
+      <svg id="leaderSvg"></svg>
+    </div>
+    <div id="sectionWrap" class="hidden"><svg id="sectionSvg" viewBox="0 0 460 520" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div class="canvas-hint">اسحب للتدوير • عجلة الماوس للتقريب • اضغط على الملصقات</div>
+    <div class="model-controls"><button class="ctl" id="resetCam">↺</button><button class="ctl" id="zoomIn">＋</button><button class="ctl" id="zoomOut">−</button></div>
+  </section>
+
+  <aside class="details">
+    <div class="sheet-handle" id="sheetHandle"></div>
+    <h2>تفاصيل العمود</h2>
+    <div class="tabs">
+      <button class="tab active" data-tab="dimensions">الأبعاد</button>
+      <button class="tab" data-tab="bars">التسليح</button>
+      <button class="tab" data-tab="ties">الكانات</button>
+      <button class="tab" data-tab="splice">الأشاير</button>
+      <button class="tab" data-tab="execution">التنفيذ</button>
+    </div>
+    <div id="panel"></div>
+  </aside>
+</main>
+
+<div class="bottom" id="bottomBar">
+  <div class="bottom-title">معلومات عامة سريعة</div>
+  <button class="quick" data-modal="mep"><b>تأسيس الكهرباء</b><span>مسارات المواسير والتنسيق</span></button>
+  <button class="quick" data-modal="beam"><b>الجسر الساقط</b><span>منسوب توقف الصب</span></button>
+  <button class="quick" data-modal="offset"><b>تصغير العمود</b><span>التكريب وميل 1:6</span></button>
+  <button class="quick" data-modal="pour"><b>قبل الصب</b><span>نظافة، قوالب، تثبيت</span></button>
+  <button class="quick" data-modal="vibration"><b>الصب والهزاز</b><span>استمرارية الصب والدمك</span></button>
+  <button class="quick" data-modal="verticality"><b>الاستقامة</b><span>المحاور والرأسية</span></button>
+</div>
+</div>
+
+<div class="modal-back" id="modalBack"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="close" id="modalClose">✕</button></div><p id="modalText"></p><div class="mini">ملاحظة: القيم النهائية تعتمد على المخططات الإنشائية ومواصفات المشروع والكود المعتمد.</div></div></div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+/* ============ DATA (unchanged content, per request) ============ */
+const DATA={
+ dimensions:{
+  title:'أبعاد وغطاء العمود',
+  cards:[
+   ['مثال توضيحي','30 × 50 cm'],
+   ['الغطاء الخرساني','حسب التعرض والمخططات'],
+   ['أقل بُعد','لا يُثبت كرقم عام هنا'],
+  ],
+  note:'نعرض البعد والغطاء بصريًا على النموذج، بينما تبقى القيمة النهائية مرتبطة بظروف التعرض وتفاصيل المشروع.'
+ },
+ bars:{
+  title:'التسليح الطولي',
+  cards:[
+   ['عدد وقطر الأسياخ','حسب التصميم'],
+   ['أقل تباعد صافٍ','max(40 mm, 1.5db, 4/3 dₐgg)'],
+   ['دعم الأسياخ جانبياً','لا يترك سيخ بعيداً عن دعم الكانة'],
+   ['نسبة التسليح','تُراجع حسب التصميم والكود'],
+  ],
+  note:'لا نعرض أقصى تباعد للأسياخ كرقم مستقل؛ الأهم في العمود العادي هو تحقيق التباعد الأدنى ومتطلبات الدعم الجانبي بالكانات.'
+ },
+ ties:{
+  title:'الكانات',
+  cards:[
+   ['قطر الكانة','حسب قطر التسليح والمخططات'],
+   ['أقصى تباعد عام','min(16db-long, 48db-tie, أصغر بُعد)'],
+   ['عكفة الكانة','حسب تفصيلة الخطاف المعتمدة'],
+   ['السيخ غير المدعوم','يُراجع شرط المسافة الجانبية'],
+  ],
+  note:'يتم إبراز الكانات منفردة عند اختيار هذا التبويب، مع إمكانية إضافة قياس العكفة والتباعد على النموذج.'
+ },
+ splice:{
+  title:'الأشاير والاشتراك',
+  cards:[
+   ['طول الاشتراك','ليس قيمة ثابتة 60Ø دائماً'],
+   ['طول الأشاير','حسب طول التثبيت/الاشتراك المطلوب'],
+   ['تكريب الأسياخ','الميل الأقصى 1 : 6'],
+   ['مكان الاشتراك','وفق المخططات ومتطلبات التنفيذ'],
+  ],
+  note:'منطقة الاشتراك ملوّنة بالبرتقالي في النموذج. عند الضغط عليها يمكن عرض طول الاشتراك المحسوب للمشروع.'
+ },
+ execution:{
+  title:'قبل وأثناء الصب',
+  cards:[
+   ['أول كانة','تُراجع بالنسبة لمنسوب القاعدة/البلاطة'],
+   ['آخر كانة','تُراجع أسفل التسليح الأفقي المتصل'],
+   ['رأسية العمود','تُفحص بالمحاور والميزان'],
+   ['نظافة الحديد والقوالب','قبل الصب مباشرة'],
+  ],
+  note:'هذا التبويب مخصص لقائمة فحص ميدانية مختصرة، وليس لتفاصيل التصميم.'
+ }
+};
+
+/* ============ Panel + tabs (mostly unchanged) ============ */
+const panel=document.getElementById('panel');
+let currentTab='dimensions';
+let lastHotspotClick=null;
+
+function renderPanel(key,fromHotspot){
+ currentTab=key;
+ const d=DATA[key];
+ panel.innerHTML=`<div class="info-card"><span class="tag general">عمود عادي</span><h3 style="margin-top:10px">${d.title}</h3>${d.cards.map(([l,v])=>`<div class="row"><span class="label">${l}</span><span class="value">${v}</span></div>`).join('')}</div><div class="note">${d.note}</div>`;
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
+ document.querySelectorAll('.hotspot').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
+ applyHighlight(key);
+ applyCamera(key,true);
+ const sheet=document.querySelector('.details');
+ if(sheet && sheet.classList.contains('collapsed') && window.innerWidth<=1050) sheet.classList.remove('collapsed');
+}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{lastHotspotClick=null;renderPanel(b.dataset.tab,false)});
+document.getElementById('sheetHandle')?.addEventListener('click',()=>document.querySelector('.details').classList.toggle('collapsed'));
+
+/* ============ Bottom bar: drag-to-scroll (mouse) + native touch/scroll-snap ============ */
+(function(){
+  const el=document.getElementById('bottomBar');
+  let isDown=false,startX=0,startScroll=0;
+  el.addEventListener('pointerdown',e=>{
+    if(e.pointerType!=='mouse')return;
+    isDown=true;el.classList.add('dragging');startX=e.clientX;startScroll=el.scrollLeft;
+  });
+  window.addEventListener('pointermove',e=>{
+    if(!isDown)return;
+    el.scrollLeft=startScroll-(e.clientX-startX);
+  });
+  window.addEventListener('pointerup',()=>{isDown=false;el.classList.remove('dragging')});
+})();
+
+/* ============ THREE.JS SCENE ============ */
+const wrap=document.getElementById('three-wrap');
+const labelLayer=document.getElementById('labelLayer');
+const leaderSvg=document.getElementById('leaderSvg');
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x07111f,.02);
+const camera=new THREE.PerspectiveCamera(37,1,.1,200);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setClearColor(0x000000,0);
+renderer.shadowMap.enabled=true;
+wrap.appendChild(renderer.domElement);
+
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.09;
+
+scene.add(new THREE.HemisphereLight(0xb7d7ff,0x1d130c,2.3));
+const key=new THREE.DirectionalLight(0xffffff,3.2);key.position.set(5,9,5);key.castShadow=true;scene.add(key);
+const rim=new THREE.DirectionalLight(0x3d8bfd,2.8);rim.position.set(-5,5,-3);scene.add(rim);
+
+const group=new THREE.Group();group.position.y=-.9;scene.add(group);
+
+/* ---- materials (shared per logical group so opacity can be tweened cheaply) ---- */
+const matConcreteSolid=new THREE.MeshStandardMaterial({color:0x9da8b3,roughness:.9,metalness:.02});
+const matShaft=new THREE.MeshStandardMaterial({color:0xbac2cc,roughness:.82,metalness:.02,transparent:true,opacity:.42,depthWrite:false});
+const matSteel=new THREE.MeshStandardMaterial({color:0x7a8698,roughness:.4,metalness:.68,transparent:true,opacity:1});
+const matSplice=new THREE.MeshStandardMaterial({color:0xf0a541,roughness:.35,metalness:.45,transparent:true,opacity:1});
+const matTie=new THREE.MeshStandardMaterial({color:0x4aa6ff,roughness:.38,metalness:.55,transparent:true,opacity:1});
+const matTieFirst=matTie.clone();matTieFirst.color.set(0xf6b64a);
+const matTieLast=matTie.clone();matTieLast.color.set(0x54d3a5);
+
+function box(w,h,d,y,mat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.y=y;m.castShadow=m.receiveShadow=true;group.add(m);return m;}
+box(4.7,.7,4.1,.35,matConcreteSolid);
+box(3.4,.45,2.9,.93,matConcreteSolid);
+box(1.35,5.7,1.8,3.95,matShaft);
+
+/* ---- longitudinal bars: single continuous bar per position = dowel(old, embedded+lap) + column bar (new, offset->1:6 incline->rejoins nominal line->straight to top) ---- */
+const barPts=[[-.52,-.75],[0,-.75],[.52,-.75],[-.52,.75],[0,.75],[.52,.75],[-.52,0],[.52,0]];
+const barR=.06;
+function barSegment(p1,p2,r,mat){
+  const dir=new THREE.Vector3().subVectors(p2,p1);
+  const len=dir.length();
+  if(len<1e-4)return null;
+  const geo=new THREE.CylinderGeometry(r,r,len,12);
+  const mesh=new THREE.Mesh(geo,mat);
+  mesh.position.copy(p1).add(p2).multiplyScalar(.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());
+  mesh.castShadow=true;
+  group.add(mesh);
+  return mesh;
+}
+barPts.forEach(([x,z])=>{
+  const dx=x===0?0:Math.sign(x)*.09;
+  const dz=z===0?0:Math.sign(z)*.09;
+  const ox=x+dx, oz=z+dz;
+  // dowel (old bar): embedded in footing up through the lap zone at the NOMINAL line
+  barSegment(new THREE.Vector3(x,.15,z),new THREE.Vector3(x,1.75,z),barR,matSplice);
+  // new bar: starts offset at base of lap zone, inclines (1:6-style) back to the nominal line, then runs straight to near the top
+  barSegment(new THREE.Vector3(ox,1.15,oz),new THREE.Vector3(x,1.75,z),barR*.95,matSplice);
+  barSegment(new THREE.Vector3(x,1.75,z),new THREE.Vector3(x,6.75,z),barR,matSteel);
+});
+
+/* ---- ties: real 3D rounded-rectangle tube + real bend+tail hook (not a plain line) ---- */
+const tieW=1.16, tieD=1.6, tieR=.032;
+const tieMeshes=[];
+function tieAt(y){
+  const hw=tieW/2,hd=tieD/2;
+  const pts=[
+    new THREE.Vector3(-hw,y,-hd),
+    new THREE.Vector3(hw,y,-hd),
+    new THREE.Vector3(hw,y,hd),
+    new THREE.Vector3(-hw,y,hd)
+  ];
+  const curve=new THREE.CatmullRomCurve3(pts,true,'catmullrom',.14);
+  const geo=new THREE.TubeGeometry(curve,88,tieR,8,true);
+  const mesh=new THREE.Mesh(geo,matTie);
+  mesh.castShadow=true;group.add(mesh);
+  // hook: bend inward ~135° at a corner + short tail, as real 3D tube (not a stub line)
+  const corner=new THREE.Vector3(hw,y,-hd);
+  const bend=new THREE.Vector3(hw-.16,y+.02,-hd+.3);
+  const tail=new THREE.Vector3(hw-.30,y+.05,-hd+.42);
+  const hookCurve=new THREE.CatmullRomCurve3([corner,bend,tail]);
+  const hookGeo=new THREE.TubeGeometry(hookCurve,16,tieR*.9,7,false);
+  const hookMesh=new THREE.Mesh(hookGeo,matTie);
+  hookMesh.castShadow=true;group.add(hookMesh);
+  tieMeshes.push({mesh,hookMesh,y});
+}
+for(let y=1.35;y<6.9;y+=.42)tieAt(y);
+
+/* ---- footing reinforcement impression (context only, kept from original) ---- */
+for(let i=-1.7;i<=1.7;i+=.42){
+  const g1=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-1.75,1.17,i),new THREE.Vector3(1.75,1.17,i)]);
+  group.add(new THREE.Line(g1,new THREE.LineBasicMaterial({color:0x667386,transparent:true,opacity:.55})));
+  const g2=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(i,1.19,-1.48),new THREE.Vector3(i,1.19,1.48)]);
+  group.add(new THREE.Line(g2,new THREE.LineBasicMaterial({color:0x667386,transparent:true,opacity:.55})));
+}
+
+const floor=new THREE.Mesh(new THREE.CircleGeometry(9,64),new THREE.MeshStandardMaterial({color:0x0a1422,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-.58;floor.receiveShadow=true;scene.add(floor);
+
+/* ============ Hotspots (screen-clamped labels, never cut off) ============ */
+const hotspots=[];
+function addHotspot(title,sub,localPos,tab){
+  const anchor=new THREE.Object3D();
+  anchor.position.set(...localPos);
+  group.add(anchor);
+  const el=document.createElement('button');
+  el.className='hotspot';
+  el.dataset.tab=tab;
+  el.innerHTML=`<b>${title}</b><i>${sub}</i>`;
+  el.onclick=()=>{
+    if(lastHotspotClick===tab){lastHotspotClick=null;renderPanel('dimensions',false);}
+    else{lastHotspotClick=tab;renderPanel(tab,true);}
+  };
+  labelLayer.appendChild(el);
+  const leader=document.createElementNS('http://www.w3.org/2000/svg','line');
+  leader.setAttribute('class','leader-line');
+  leaderSvg.appendChild(leader);
+  hotspots.push({anchor,el,leader});
+}
+addHotspot('الغطاء الخرساني','Concrete Cover',[1.5,4.8,.2],'dimensions');
+addHotspot('تباعد الأسياخ','Clear spacing',[-1.6,4.8,.3],'bars');
+addHotspot('الكانات','القطر • التباعد • العكفة',[1.7,3.5,-.2],'ties');
+addHotspot('منطقة الاشتراك','Lap splice length',[-1.7,2.25,-.1],'splice');
+addHotspot('أول / آخر كانة','First / last tie distance',[1.7,1.45,.4],'execution');
+addHotspot('ميل التكريب','Offset slope ≤ 1:6',[-1.7,6.1,.2],'splice');
+
+function updateOverlay(){
+  const rect=wrap.getBoundingClientRect();
+  const w=rect.width,h=rect.height;
+  if(!w||!h)return;
+  const tmp=new THREE.Vector3();
+  hotspots.forEach(hs=>{
+    hs.anchor.getWorldPosition(tmp);
+    const p=tmp.clone().project(camera);
+    if(p.z>1||p.z<-1){hs.el.style.opacity='0';hs.leader.style.opacity='0';return;}
+    const sx=(p.x*.5+.5)*w;
+    const sy=(1-(p.y*.5+.5))*h;
+    const bw=hs.el.offsetWidth||120, bh=hs.el.offsetHeight||38;
+    const pad=8;
+    let tx=sx+14, ty=sy-bh/2;
+    tx=Math.min(Math.max(tx,pad),Math.max(pad,w-bw-pad));
+    ty=Math.min(Math.max(ty,pad),Math.max(pad,h-bh-pad));
+    hs.el.style.opacity='1';
+    hs.el.style.transform=`translate(${tx}px,${ty}px)`;
+    hs.leader.style.opacity='1';
+    hs.leader.setAttribute('x1',sx);hs.leader.setAttribute('y1',sy);
+    const lx=tx< sx ? tx+bw : tx;
+    hs.leader.setAttribute('x2',lx);hs.leader.setAttribute('y2',ty+bh/2);
+  });
+}
+
+/* ============ Highlight system (dim others, keep concrete context visible) ============ */
+const HIGHLIGHT={
+ dimensions:{shaft:.55,bars:.45,ties:.35,splice:.35},
+ bars:      {shaft:.22,bars:1,  ties:.35,splice:.4},
+ ties:      {shaft:.22,bars:.35,ties:1,  splice:.3},
+ splice:    {shaft:.22,bars:.3, ties:.3, splice:1},
+ execution: {shaft:.3, bars:.4, ties:.55,splice:.3}
+};
+const targetOpacity={shaft:.55,bars:.45,ties:.35,splice:.35};
+function applyHighlight(tabKey){
+  const h=HIGHLIGHT[tabKey]||HIGHLIGHT.dimensions;
+  targetOpacity.shaft=h.shaft;targetOpacity.bars=h.bars;targetOpacity.ties=h.ties;targetOpacity.splice=h.splice;
+  const exec=tabKey==='execution';
+  if(tieMeshes.length){
+    const first=tieMeshes[0], last=tieMeshes[tieMeshes.length-1];
+    first.mesh.material=exec?matTieFirst:matTie; first.hookMesh.material=exec?matTieFirst:matTie;
+    last.mesh.material=exec?matTieLast:matTie; last.hookMesh.material=exec?matTieLast:matTie;
+  }
+}
+function tickMaterials(dt){
+  const k=Math.min(1,dt*6);
+  matShaft.opacity+=(targetOpacity.shaft-matShaft.opacity)*k;
+  matSteel.opacity+=(targetOpacity.bars-matSteel.opacity)*k;
+  matTie.opacity+=(targetOpacity.ties-matTie.opacity)*k;
+  matSplice.opacity+=(targetOpacity.splice-matSplice.opacity)*k;
+}
+
+/* ============ Camera fit-to-view + per-tab smooth focus ============ */
+const baseCenter=new THREE.Vector3();
+let baseDistance=8;
+const viewDir=new THREE.Vector3(.6,.42,.68).normalize();
+function computeBase(){
+  const box3=new THREE.Box3().setFromObject(group);
+  const size=box3.getSize(new THREE.Vector3());
+  const center=box3.getCenter(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.y,size.z);
+  const fitH=(maxDim/2)/Math.tan(THREE.MathUtils.degToRad(camera.fov/2));
+  const fitW=fitH/Math.max(camera.aspect,.0001);
+  const distance=1.3*Math.max(fitH,fitW);
+  baseCenter.copy(center);
+  baseDistance=distance;
+  controls.minDistance=distance*.3;
+  controls.maxDistance=distance*2.6;
+  camera.near=Math.max(.05,distance/100);
+  camera.far=distance*40;
+  camera.updateProjectionMatrix();
+}
+const FOCUS={
+ dimensions:{y:null,scale:1.18},
+ bars:{y:3.05,scale:.95},
+ ties:{y:3.05,scale:.85},
+ splice:{y:.55,scale:.6},
+ execution:{y:null,scale:1.05}
+};
+function focusFor(tabKey){
+  const f=FOCUS[tabKey]||FOCUS.dimensions;
+  const y=f.y===null?baseCenter.y:f.y;
+  const target=new THREE.Vector3(0,y,0);
+  const dist=baseDistance*f.scale;
+  const pos=target.clone().addScaledVector(viewDir,dist);
+  return {pos,target};
+}
+let camAnim=null;
+function animateCameraTo(pos,target,duration=650){
+  camAnim={from:camera.position.clone(),to:pos.clone(),fromLook:controls.target.clone(),toLook:target.clone(),start:performance.now(),duration};
+}
+function applyCamera(tabKey,animate){
+  const {pos,target}=focusFor(tabKey);
+  if(animate)animateCameraTo(pos,target);
+  else{camera.position.copy(pos);controls.target.copy(target);}
+}
+
+/* ============ Resize ============ */
+function resize(){
+  const w=wrap.clientWidth,h=wrap.clientHeight;
+  if(!w||!h)return;
+  camera.aspect=w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h,false);
+  computeBase();
+  if(!camAnim)applyCamera(currentTab,false);
+}
+window.addEventListener('resize',resize);
+
+/* ============ Single render loop (requestAnimationFrame only) ============ */
+let lastT=performance.now();
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(.05,(now-lastT)/1000);lastT=now;
+  if(camAnim){
+    const t=Math.min(1,(now-camAnim.start)/camAnim.duration);
+    const e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    camera.position.lerpVectors(camAnim.from,camAnim.to,e);
+    controls.target.lerpVectors(camAnim.fromLook,camAnim.toLook,e);
+    if(t>=1)camAnim=null;
+  }
+  controls.update();
+  tickMaterials(dt);
+  updateOverlay();
+  renderer.render(scene,camera);
+}
+
+/* init */
+computeBase();
+applyCamera('dimensions',false);
+resize();
+requestAnimationFrame(loop);
+renderPanel('dimensions',false);
+
+/* ============ Controls: reset / zoom ============ */
+document.getElementById('resetCam').onclick=()=>{
+  lastHotspotClick=null;
+  renderPanel('dimensions',false);
+};
+function zoom(factor){
+  const dir=camera.position.clone().sub(controls.target);
+  const newPos=controls.target.clone().add(dir.multiplyScalar(factor));
+  const dist=newPos.distanceTo(controls.target);
+  if(dist>=controls.minDistance&&dist<=controls.maxDistance)camera.position.copy(newPos);
+}
+document.getElementById('zoomIn').onclick=()=>zoom(.86);
+document.getElementById('zoomOut').onclick=()=>zoom(1.16);
+
+/* ============ Section View (procedural AutoCAD-style plan cross-section) ============ */
+const svgNS='http://www.w3.org/2000/svg';
+function buildSectionSVG(){
+  const svg=document.getElementById('sectionSvg');
+  const SCALE=150, cx=230, cy=230;
+  const halfW=.675*SCALE, halfD=.9*SCALE;
+  const tHalfW=(tieW/2)*SCALE, tHalfD=(tieD/2)*SCALE;
+  const barPx=barR*SCALE;
+  const px=(x)=>cx+x*SCALE, py=(z)=>cy+z*SCALE;
+
+  let s=`<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7dc4ff"/></marker></defs>`;
+
+  // concrete outline
+  s+=`<rect x="${cx-halfW}" y="${cy-halfD}" width="${halfW*2}" height="${halfD*2}" rx="4" fill="rgba(186,194,204,.16)" stroke="#c9d3dd" stroke-width="1.6"/>`;
+  // tie outline (rounded rect)
+  s+=`<rect x="${cx-tHalfW}" y="${cy-tHalfD}" width="${tHalfW*2}" height="${tHalfD*2}" rx="14" fill="none" stroke="#4aa6ff" stroke-width="2.4"/>`;
+  // hook mark near a corner
+  const hx=cx+tHalfW, hy=cy-tHalfD;
+  s+=`<path d="M${hx},${hy} L${hx-16},${hy+22} L${hx-30},${hy+30}" fill="none" stroke="#4aa6ff" stroke-width="2.4" stroke-linecap="round"/>`;
+
+  // bars
+  barPts.forEach(([x,z])=>{
+    s+=`<circle cx="${px(x)}" cy="${py(z)}" r="${barPx}" fill="#8b96a6" stroke="#c7d1dc" stroke-width="1"/>`;
+  });
+
+  function dimH(x1,x2,y,label){
+    s+=`<line class="extline" x1="${x1}" y1="${y-14}" x2="${x1}" y2="${y+6}"/>`;
+    s+=`<line class="extline" x1="${x2}" y1="${y-14}" x2="${x2}" y2="${y+6}"/>`;
+    s+=`<line class="dimline" x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    const mx=(x1+x2)/2;
+    s+=`<rect class="dimlabel-bg" x="${mx-42}" y="${y-19}" width="84" height="15" rx="3"/>`;
+    s+=`<text class="dimlabel" x="${mx}" y="${y-8}" text-anchor="middle">${label}</text>`;
+  }
+  function dimV(y1,y2,x,label,labelOffset){
+    s+=`<line class="extline" x1="${x-14}" y1="${y1}" x2="${x+6}" y2="${y1}"/>`;
+    s+=`<line class="extline" x1="${x-14}" y1="${y2}" x2="${x+6}" y2="${y2}"/>`;
+    s+=`<line class="dimline" x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" marker-start="url(#arrow)" marker-end="url(#arrow)"/>`;
+    const my=(y1+y2)/2;
+    s+=`<rect class="dimlabel-bg" x="${x+8}" y="${my-8}" width="${(labelOffset||90)}" height="15" rx="3"/>`;
+    s+=`<text class="dimlabel" x="${x+12}" y="${my+3}">${label}</text>`;
+  }
+
+  // concrete cover: from right face to the nearest bar surface (right mid bar)
+  const coverBar=barPts.find(p=>p[0]>.4&&p[1]===0)||[.52,0];
+  const coverX1=cx+halfW, coverX2=px(coverBar[0])+barPx;
+  dimH(coverX2,coverX1,py(0)-halfD-26,'Concrete Cover');
+
+  // clear spacing between two adjacent bars on the top row (surface to surface, not center to center)
+  const rowZ=-.75;
+  dimH(px(-.52)+barPx,px(0)-barPx,py(rowZ)-24,'Clear Bar Spacing');
+
+  // overall tie width / depth
+  dimH(cx-tHalfW,cx+tHalfW,cy-halfD-52,'Tie Width');
+  dimV(cy-tHalfD,cy+tHalfD,cx+halfW+34,'Tie Depth');
+
+  // hook tail
+  s+=`<circle cx="${hx-30}" cy="${hy+30}" r="3" fill="#4aa6ff"/>`;
+  s+=`<rect class="dimlabel-bg" x="${hx-30}" y="${hy+38}" width="86" height="15" rx="3"/>`;
+  s+=`<text class="dimlabel" x="${hx-30}" y="${hy+49}" text-anchor="middle" font-size="9.5">Tie Hook Tail</text>`;
+
+  // caption notes (measurement convention, no invented numeric values)
+  const noteY=cy+halfD+38;
+  s+=`<text class="section-note" x="${cx}" y="${noteY}" text-anchor="middle">Concrete Cover يُقاس من وجه الخرسانة إلى السطح الخارجي لأقرب حديد — وليس إلى مركز السيخ.</text>`;
+  s+=`<text class="section-note" x="${cx}" y="${noteY+16}" text-anchor="middle">Clear Bar Spacing هي المسافة الصافية بين سطحَي السيخين — وليس Center-to-Center.</text>`;
+
+  svg.innerHTML=s;
+}
+buildSectionSVG();
+
+document.getElementById('tabSection').onclick=()=>{
+  document.getElementById('tabSection').classList.add('active');
+  document.getElementById('tab3d').classList.remove('active');
+  document.getElementById('sectionWrap').classList.remove('hidden');
+  document.getElementById('three-wrap').classList.add('hidden');
+};
+document.getElementById('tab3d').onclick=()=>{
+  document.getElementById('tab3d').classList.add('active');
+  document.getElementById('tabSection').classList.remove('active');
+  document.getElementById('three-wrap').classList.remove('hidden');
+  document.getElementById('sectionWrap').classList.add('hidden');
+  resize();
+};
+
+/* ============ Quick info modals (unchanged content) ============ */
+const MODALS={
+ mep:['تأسيس الكهرباء','يُفضّل تنسيق مخارج وتمديدات الكهرباء بحيث لا تتعارض مع التسليح أو تقلل الغطاء الخرساني، ويُعتمد المسار النهائي بالتنسيق مع المخططات المعمارية والـMEP.'],
+ beam:['الجسر الساقط','عند اتصال العمود بجسر ساقط، يُراجع منسوب توقف صب العمود وتفاصيل منطقة الاتصال حسب المخططات وتسلسل الصب المعتمد.'],
+ offset:['تصغير العمود — التكريب','عند تغيير مقطع العمود، يُراجع تكريب الأسياخ قبل الصب. الميل الأقصى للأسياخ المكرّبة يكون 1 أفقي إلى 6 رأسي، مع الالتزام بتفاصيل المصمم.'],
+ pour:['قبل الصب','قائمة الفحص: المحاور والأبعاد، رأسية القالب، الغطاء الخرساني، نظافة الحديد والقالب، تثبيت الأشاير والكانات، وعدم وجود تعارضات MEP.'],
+ vibration:['الصب والهزاز','يُفضّل استمرار الصب دون توقفات غير مخططة، مع الدمك المنتظم وتجنب ملامسة الهزاز للتسليح أو الإفراط في الاهتزاز. أي فاصل صب يُنفذ وفق الإجراء المعتمد.'],
+ verticality:['رأسية العمود','تُراجع رأسية القالب والأشاير قبل الصب، ثم تُفحص أثناء الصب وبعده مباشرة باستخدام أداة قياس مناسبة قبل تصلب الخرسانة.']
+};
+const back=document.getElementById('modalBack');
+document.querySelectorAll('.quick').forEach(b=>b.onclick=()=>{
+  const [t,x]=MODALS[b.dataset.modal];
+  document.getElementById('modalTitle').textContent=t;
+  document.getElementById('modalText').textContent=x;
+  back.classList.add('open');
+});
+document.getElementById('modalClose').onclick=()=>back.classList.remove('open');
+back.onclick=e=>{if(e.target===back)back.classList.remove('open')};
+</script>
+</body>
+</html>
